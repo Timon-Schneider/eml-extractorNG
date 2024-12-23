@@ -1,4 +1,6 @@
-# EML Extractor
+# EML ExtractorNG
+
+***Improved code that handles edge cases and duplicates better!***
 
 EML Extractor is a CLI tool to extract attachments from .eml files (email messages saved as files).
 
@@ -18,10 +20,7 @@ Python 3.6+
 
 ## Installation
 
-```console
-$ pip install eml-extractor
-```
-
+Download the code and execute it with python
 
 ## Usage
 
