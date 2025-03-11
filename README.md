@@ -1,4 +1,4 @@
-# EML ExtractorNG
+# EML ExtractorNGX
 
 ***Improved code that handles edge cases and duplicates better!***
 
@@ -10,7 +10,8 @@ EML Extractor is a CLI tool to extract attachments from .eml files (email messag
 * Find .eml files (recursively or not) in a selected folder;
 * Select individuals .eml files to extraction;
 * Save all attachments in a single main folder;
-* Organize the attachments by email subject subfolder.
+* Organize the attachments by email subject subfolder;
+* Filter attachments by file extension (e.g., extract only PDF files).
 
 
 ## Requirements
@@ -44,6 +45,8 @@ optional arguments:
   -d PATH, --destination PATH
                         the directory to extract attachments to (default:
                         current working directory)
+  -e EXT [EXT ...], --extensions EXT [EXT ...]
+                        filter attachments by file extension (e.g., .pdf .png .jpg)
 ```
 
 
@@ -77,6 +80,16 @@ $ eml-extractor --files /path/to/file1.eml /path/to/file2.eml
 ### 5. Change the path where to save the extracted attachments:
 ```console
 $ eml-extractor --destination /path/to/extracted/attachments/
+```
+
+### 6. Extract only specific file types:
+```console
+$ eml-extractor --extensions .pdf .jpg .png
+```
+
+You can also extract only specific file types from specific files:
+```console
+$ eml-extractor --files /path/to/file1.eml --extensions .pdf .docx
 ```
 
 

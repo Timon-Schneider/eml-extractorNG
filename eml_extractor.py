@@ -3,7 +3,7 @@ import re
 from argparse import ArgumentParser, ArgumentTypeError
 from email import message_from_file, policy
 from pathlib import Path
-from typing import List
+from typing import List, Optional, Set
 
 
 def generate_unique_filename(filepath: Path) -> Path:
@@ -22,7 +22,7 @@ def generate_unique_filename(filepath: Path) -> Path:
         counter += 1
 
 
-def extract_attachments(file: Path, destination: Path) -> None:
+def extract_attachments(file: Path, destination: Path, extensions: Optional[Set[str]] = None) -> None:
     print(f'PROCESSING FILE "{file}"')
     try:
         with file.open(encoding='utf-8', errors='replace') as f:
@@ -43,6 +43,11 @@ def extract_attachments(file: Path, destination: Path) -> None:
                 filename = get_safe_filename(attachment)
                 if not filename:
                     print('>> Attachment found: None')
+                    continue
+
+                # Skip files that don't match specified extensions
+                if extensions and Path(filename).suffix.lower() not in extensions:
+                    print(f'>> Skipping attachment: {filename} (extension not in filter)')
                     continue
 
                 print(f'>> Attachment found: {filename}')
@@ -76,6 +81,11 @@ def extract_attachments(file: Path, destination: Path) -> None:
                 filename = get_safe_filename(attachment)
                 if not filename:
                     print('>> Attachment found: None')
+                    continue
+
+                # Skip files that don't match specified extensions
+                if extensions and Path(filename).suffix.lower() not in extensions:
+                    print(f'>> Skipping attachment: {filename} (extension not in filter)')
                     continue
 
                 print(f'>> Attachment found: {filename}')
@@ -161,7 +171,7 @@ def check_path(arg_value: str) -> Path:
     raise ArgumentTypeError(f'"{path}" is not a valid directory.')
 
 
-def main():
+def get_argument_parser():
     parser = ArgumentParser(
         usage='%(prog)s [OPTIONS]',
         description='Extracts attachments from .eml files'
@@ -198,14 +208,33 @@ def main():
         metavar='PATH',
         help='the directory to extract attachments into (default: current working directory)'
     )
+    parser.add_argument(
+        '-e',
+        '--extensions',
+        nargs='+',
+        metavar='EXT',
+        help='filter attachments by file extension (e.g., .pdf .png .jpg)'
+    )
+    return parser
+
+
+def main():
+    parser = get_argument_parser()
     args = parser.parse_args()
+
+    # Process file extensions if provided
+    extensions = None
+    if args.extensions:
+        # Normalize extensions to lowercase and ensure they start with a dot
+        extensions = {ext.lower() if ext.startswith('.') else f'.{ext.lower()}' for ext in args.extensions}
+        print(f'Filtering attachments for extensions: {", ".join(extensions)}')
 
     eml_files = args.files or get_eml_files_from(args.source, args.recursive)
     if not eml_files:
         print(f'No EML files found!')
 
     for file in eml_files:
-        extract_attachments(file, destination=args.destination)
+        extract_attachments(file, destination=args.destination, extensions=extensions)
     print('Done.')
 
 
