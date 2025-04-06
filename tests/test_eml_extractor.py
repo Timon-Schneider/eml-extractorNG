@@ -66,8 +66,24 @@ class TestEmlExtractor(unittest.TestCase):
             extract_attachments(source, destination)
             self.assertFalse(mock_save_attachment.called)
 
+    @mock.patch('eml_extractor.save_attachment')
+    def test_extract_attachments_with_extension_filter(self, mock_save_attachment):
+        with TemporaryDirectory() as temp_dir:
+            source = DATA_DIR / 'file with attachments.eml'
+            destination = Path(temp_dir)
+            # Only extract .txt files
+            extensions = {'.txt'}
+            extract_attachments(source, destination, extensions=extensions)
+            self.assertEqual(mock_save_attachment.call_count, 2)
+            
+            # Test with a filter that excludes all attachments
+            mock_save_attachment.reset_mock()
+            extensions = {'.pdf'}
+            extract_attachments(source, destination, extensions=extensions)
+            self.assertEqual(mock_save_attachment.call_count, 0)
+
     def test_sanitize_foldername_should_replace_all_invalid_chars(self):
-        invalid_chars = '/\|[]{}:<>+=;,?!*"~#$%&@\''
+        invalid_chars = r'/\\[]{}:<>+=;,?!*"~#$%&@\''
         expected_name = "_" * len(invalid_chars)
         self.assertEqual(sanitize_foldername(invalid_chars), expected_name)
 
@@ -119,6 +135,7 @@ class TestArguments(unittest.TestCase):
         self.assertFalse(args.recursive)
         self.assertIsNone(args.files)
         self.assertEqual(args.destination, Path.cwd())
+        self.assertIsNone(args.extensions)
 
     def test_source(self):
         with TemporaryDirectory() as temp_dir:
@@ -138,13 +155,18 @@ class TestArguments(unittest.TestCase):
         with TemporaryDirectory() as temp_dir:
             args = self.parser.parse_args(['--destination', temp_dir])
             self.assertEqual(args.destination, Path(temp_dir))
+        
+    def test_extensions(self):
+        with NamedTemporaryFile(suffix='.eml') as temp_file:
+            args = self.parser.parse_args(['--files', temp_file.name, '--extensions', '.pdf', 'jpg'])
+            self.assertListEqual(args.extensions, ['.pdf', 'jpg'])
 
     @mock.patch('sys.stderr', new_callable=StringIO)
     def test_mutual_exclusion_between_source_and_files(self, mock_stderr):
         with self.assertRaises(SystemExit), NamedTemporaryFile(suffix='.eml') as temp_file:
             self.parser.parse_args(['--source', '.', '--files', temp_file.name])
         expected_error_msg = 'argument -f/--files: not allowed with argument -s/--source'
-        self.assertRegexpMatches(mock_stderr.getvalue(), expected_error_msg)
+        self.assertRegex(mock_stderr.getvalue(), expected_error_msg)
 
 
 if __name__ == '__main__':
